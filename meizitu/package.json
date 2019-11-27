@@ -1,0 +1,16 @@
+{
+	"name": "meizitu",
+	"version": "1.0.0",
+	"scripts": {
+		"start": "preact watch",
+		"build": "preact build",
+		"deploy": "orzv upypush laozi:vtoYZQzzxVSKVPEuJketIQwn4a92nGYu@meizi-web ./build"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"preact": "^10.0.5",
+		"preact-render-to-string": "^5.1.1"
+	}
+}

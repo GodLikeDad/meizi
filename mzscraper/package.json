@@ -1,0 +1,29 @@
+{
+	"name": "mzscraper",
+	"version": "1.0.0",
+	"description": "",
+	"main": "index.js",
+	"scripts": {
+		"deploy": "orzv scfpush",
+		"test": "orzv scfcall"
+	},
+	"keywords": [],
+	"author": "",
+	"license": "ISC",
+	"dependencies": {
+		"btsc": "^1.1.2"
+	},
+	"cfc": {
+		"ak": "3710a02362a7422cafe2b5c8f73a61c1",
+		"sk": "e498e28724f64d9dae139a0ba3cea59c",
+		"region": "gz",
+		"name": "mzscraper"
+	},
+	"scf": {
+		"id": "AKIDax95HHXYooZ8TaH8WMwGQK2XBYgZdcmg",
+		"key": "qQkpxEG2QaUDhvylJx85nFwSpwnUv50i",
+		"region": "ap-guangzhou",
+		"name": "mzscraper",
+		"handler": "index.handler"
+	}
+}
