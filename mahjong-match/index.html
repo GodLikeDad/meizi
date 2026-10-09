@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>麻将对对碰 · 新手第一堂麻将课</title>
+<style>
+/* ===================== 设计变量 ===================== */
+:root{
+  --bg:#f2ebdc;
+  --bg-2:#e9dfc9;
+  --felt:#14402f;
+  --felt-2:#0e2e21;
+  --ink:#231f19;
+  --muted:#7a6f5c;
+  --red:#b23a2d;
+  --gold:#bf9d5c;
+  --line:rgba(35,31,25,.12);
+  --tile-face-1:#fffdf6;
+  --tile-face-2:#f4ecda;
+  --tile-edge:#ded0b2;
+  --radius:14px;
+  --shadow-tile:0 2px 0 #d8c9a8, 0 6px 14px rgba(35,31,25,.16);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+  color:var(--ink);
+  background:
+    radial-gradient(120% 80% at 50% -10%, #fbf6ea 0%, transparent 60%),
+    linear-gradient(180deg,var(--bg) 0%, var(--bg-2) 100%);
+  min-height:100%;
+  -webkit-font-smoothing:antialiased;
+}
+.serif{font-family:"Songti SC","Noto Serif SC","Source Han Serif SC",STSong,serif}
+
+/* ===================== 布局外壳 ===================== */
+.wrap{max-width:1080px;margin:0 auto;padding:22px 20px 64px}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:6px 2px 20px}
+.brand{display:flex;align-items:baseline;gap:12px}
+.brand h1{font-size:clamp(20px,3.4vw,30px);letter-spacing:.14em;font-weight:600}
+.brand .dot{width:9px;height:9px;border-radius:50%;background:var(--red);box-shadow:0 0 0 3px rgba(178,58,45,.14)}
+.brand small{color:var(--muted);letter-spacing:.28em;font-size:11px}
+.steps{display:flex;align-items:center;gap:9px}
+.steps .s{width:26px;height:5px;border-radius:99px;background:rgba(35,31,25,.16);transition:.35s}
+.steps .s.on{background:var(--red);width:40px}
+.steps .s.done{background:var(--gold)}
+
+/* ===================== 通用按钮 ===================== */
+.btn{
+  font:inherit;font-size:14px;cursor:pointer;border-radius:99px;padding:11px 22px;border:1px solid transparent;
+  transition:transform .18s, box-shadow .18s, background .18s, color .18s;
+}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--red);color:#fff;box-shadow:0 8px 20px rgba(178,58,45,.28)}
+.btn.primary:hover{box-shadow:0 10px 26px rgba(178,58,45,.4)}
+.btn.ghost{background:transparent;border-color:var(--line);color:var(--ink)}
+.btn.ghost:hover{background:rgba(35,31,25,.05)}
+
+/* ===================== 首屏 ===================== */
+.hero{padding:26px 4px 8px}
+.hero .kicker{color:var(--red);letter-spacing:.4em;font-size:12px;margin-bottom:14px}
+.hero h2.big{font-size:clamp(38px,8vw,74px);line-height:1.02;letter-spacing:.06em;font-weight:600}
+.hero h2.big em{font-style:normal;color:var(--red)}
+.hero p.lead{margin-top:18px;max-width:34em;color:var(--muted);font-size:clamp(14px,1.7vw,16px);line-height:1.85}
+.hero .cta{margin-top:26px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.hero .hintline{color:var(--muted);font-size:12.5px;letter-spacing:.02em}
+
+/* 章节列表 */
+.chapters{margin-top:44px;border-top:1px solid var(--line)}
+.chapters .row{
+  display:grid;grid-template-columns:64px 1fr auto;gap:18px;align-items:center;
+  padding:20px 6px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .2s,padding .2s;
+}
+.chapters .row:hover{background:rgba(178,58,45,.045);padding-left:14px;padding-right:0}
+.chapters .no{font-size:30px;color:var(--red);letter-spacing:.02em;line-height:1}
+.chapters .row .t{font-size:17px;letter-spacing:.06em}
+.chapters .row .d{color:var(--muted);font-size:13px;margin-top:5px;line-height:1.6}
+.chapters .row .go{color:var(--muted);font-size:13px;letter-spacing:.14em;white-space:nowrap}
+.chapters .row.locked{opacity:.42;cursor:not-allowed}
+.chapters .row.locked:hover{background:none;padding-left:6px}
+
+/* ===================== 关卡框架 ===================== */
+.stage-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px}
+.stage-head .t1{color:var(--red);letter-spacing:.34em;font-size:12px}
+.stage-head h3{font-size:clamp(22px,3.6vw,32px);letter-spacing:.05em;font-weight:600;margin-top:8px}
+.stage-head .goal{color:var(--muted);font-size:13.5px;line-height:1.7;max-width:40em;margin-top:8px}
+.stage-head .tools{display:flex;gap:10px}
+
+/* 牌桌 */
+.table{
+  position:relative;border-radius:22px;padding:clamp(18px,3vw,34px);
+  background:
+    radial-gradient(80% 60% at 50% 0%, rgba(255,255,255,.06), transparent 60%),
+    linear-gradient(160deg,var(--felt) 0%, var(--felt-2) 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.06), inset 0 22px 60px rgba(0,0,0,.32), 0 24px 50px rgba(20,40,30,.22);
+  overflow:hidden;
+}
+.table::after{ /* 绒布细纹 */
+  content:"";position:absolute;inset:0;pointer-events:none;
+  background-image:radial-gradient(rgba(255,255,255,.045) 1px, transparent 1px);
+  background-size:5px 5px;opacity:.6;
+}
+.board{position:relative;display:flex;flex-wrap:wrap;gap:clamp(8px,1.4vw,14px);justify-content:center;min-height:120px}
+
+/* 牌 */
+.tile{
+  position:relative;width:var(--tw,58px);height:calc(var(--tw,58px) * 1.34);
+  border:none;background:transparent;padding:0;cursor:pointer;
+  perspective:600px;
+}
+.tile .face{
+  position:absolute;inset:0;border-radius:9px;
+  background:linear-gradient(180deg,var(--tile-face-1),var(--tile-face-2));
+  border:1px solid var(--tile-edge);
+  box-shadow:var(--shadow-tile);
+  display:flex;align-items:center;justify-content:center;flex-direction:column;
+  transition:transform .2s, box-shadow .2s, border-color .2s;
+  animation:rise .42s cubic-bezier(.2,.8,.25,1) backwards;
+}
+.tile:hover .face{transform:translateY(-6px);box-shadow:0 3px 0 #d8c9a8,0 12px 22px rgba(0,0,0,.28)}
+.tile.sel .face{transform:translateY(-10px);border-color:var(--red);box-shadow:0 3px 0 #d8c9a8,0 14px 26px rgba(178,58,45,.4)}
+.tile.sel::before{content:"";position:absolute;left:50%;bottom:-11px;width:0;height:0;transform:translateX(-50%);border:6px solid transparent;border-top-color:var(--red)}
+.tile.gone{pointer-events:none}
+.tile.gone .face{animation:poof .5s cubic-bezier(.3,1.4,.5,1) forwards}
+.tile.wrong .face{animation:shake .4s}
+.tile.done .face{opacity:.34}
+.tile.sm{--tw:44px}
+
+/* 牌面内容 */
+.glyph-num{font-family:"Songti SC",serif;font-weight:600;line-height:1;color:var(--ink)}
+.glyph-suit{font-family:"Songti SC",serif;line-height:1}
+.g-w{font-size:calc(var(--tw,58px) * .52)}
+.g-ws{font-size:calc(var(--tw,58px) * .5);color:var(--red)}
+.g-big{font-family:"Songti SC",serif;font-weight:700;font-size:calc(var(--tw,58px) * .56);line-height:1}
+.g-big.f{color:#1c4f43}
+.g-big.red{color:var(--red)}
+.g-big.green{color:#177a4d}
+.g-white{display:block;width:calc(var(--tw,58px)*.44);height:calc(var(--tw,58px)*.6);border:2.5px solid #3a6b8f;border-radius:4px}
+.pips{display:grid;grid-template-columns:repeat(var(--cols,1),1fr);gap:calc(var(--tw,58px)*.055);place-items:center;padding:calc(var(--tw,58px)*.14)}
+.pips .dot{width:calc(var(--tw,58px)*.19);height:calc(var(--tw,58px)*.19);border-radius:50%;background:radial-gradient(circle at 35% 30%,#4d8fb5,#1f5b7d);box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.35)}
+.pips .dot.red{background:radial-gradient(circle at 35% 30%,#d1695c,#a52f22)}
+.pips .bamboo{width:calc(var(--tw,58px)*.13);height:calc(var(--tw,58px)*.3);border-radius:3px;background:linear-gradient(180deg,#2f9a63,#166b41);position:relative}
+.pips .bamboo::after{content:"";position:absolute;left:0;right:0;top:50%;height:1.5px;background:rgba(255,255,255,.5)}
+.pips .bamboo.red{background:linear-gradient(180deg,#d1695c,#a52f22)}
+
+/* 反馈条 */
+.feedback{
+  margin-top:18px;position:relative;border-radius:14px;padding:16px 18px;
+  background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);color:#eef4ee;
+  font-size:14px;line-height:1.7;min-height:56px;display:flex;align-items:center;gap:12px;
+  transition:.25s;
+}
+.feedback .tag{flex:none;font-size:11px;letter-spacing:.2em;padding:5px 10px;border-radius:99px;background:rgba(255,255,255,.14)}
+.feedback.ok{background:rgba(96,197,138,.16);border-color:rgba(120,220,160,.4)}
+.feedback.ok .tag{background:rgba(120,220,160,.32)}
+.feedback.no{background:rgba(220,110,90,.16);border-color:rgba(235,140,120,.4)}
+.feedback.no .tag{background:rgba(235,140,120,.32)}
+
+/* 牌墙 */
+.wall{margin-top:22px;padding-top:20px;border-top:1px dashed rgba(255,255,255,.16)}
+.wall .lab{color:rgba(255,255,255,.62);font-size:12px;letter-spacing:.22em;margin-bottom:12px}
+.hintbar{
+  margin-top:16px;color:var(--muted);font-size:13px;line-height:1.7;
+  border-left:2px solid var(--gold);padding-left:14px;
+}
+
+/* 关卡结果弹层 */
+.overlay{position:fixed;inset:0;background:rgba(24,20,15,.5);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:22px;z-index:50;animation:fade .3s}
+.sheet{
+  background:linear-gradient(180deg,#fffdf7,#f4ecda);border-radius:22px;max-width:520px;width:100%;padding:34px 32px;
+  box-shadow:0 40px 90px rgba(0,0,0,.4);animation:pop .45s cubic-bezier(.2,1.2,.4,1);text-align:center;
+}
+.sheet .mark{font-size:34px;color:var(--red);letter-spacing:.1em}
+.sheet h4{font-size:26px;letter-spacing:.08em;margin:14px 0 12px}
+.sheet p{color:var(--muted);font-size:14px;line-height:1.85}
+.sheet .facts{margin:20px 0;text-align:left;display:grid;gap:9px}
+.sheet .facts li{list-style:none;font-size:13.5px;color:#4a4438;background:rgba(191,157,92,.13);border-radius:10px;padding:10px 14px;line-height:1.6}
+.sheet .acts{margin-top:24px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+/* 第四章 配对视图 */
+.matchwrap{display:grid;grid-template-columns:1fr;gap:26px}
+@media(min-width:760px){.matchwrap{grid-template-columns:1.15fr .85fr;align-items:start}}
+.mhands{display:grid;gap:16px}
+.mhand{
+  border-radius:16px;padding:16px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);
+  cursor:pointer;transition:.22s;display:flex;flex-direction:column;gap:12px;
+}
+.mhand:hover{background:rgba(255,255,255,.11)}
+.mhand.sel{border-color:var(--red);box-shadow:0 0 0 1px var(--red),0 14px 30px rgba(178,58,45,.28)}
+.mhand.matched{opacity:.4;pointer-events:none}
+.mhand .hrow{display:flex;gap:5px;flex-wrap:wrap}
+.mhand .lbl{color:#eef4ee;font-size:12px;letter-spacing:.14em}
+.mnames{display:grid;gap:12px}
+.mname{
+  border-radius:12px;padding:16px 18px;background:linear-gradient(180deg,#fffdf7,#f2e8d4);border:1px solid var(--tile-edge);
+  cursor:pointer;transition:.2s;text-align:left;font:inherit;
+}
+.mname:hover{transform:translateY(-3px);box-shadow:0 12px 26px rgba(0,0,0,.25)}
+.mname.sel{border-color:var(--red);box-shadow:0 0 0 1px var(--red)}
+.mname.matched{opacity:.4;pointer-events:none}
+.mname .n{font-size:17px;letter-spacing:.06em}
+.mname .e{font-size:11.5px;color:var(--muted);margin-top:4px;letter-spacing:.04em}
+
+/* 动画 */
+@keyframes rise{from{opacity:0;transform:translateY(14px) scale(.92)}to{opacity:1;transform:none}}
+@keyframes poof{0%{opacity:1}45%{transform:scale(1.22) rotate(5deg);opacity:1}100%{opacity:0;transform:scale(.7) rotate(10deg)}}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+@keyframes pop{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:none}}
+.reveal{animation:rise .5s cubic-bezier(.2,.8,.25,1) backwards}
+
+footer.foot{margin-top:40px;text-align:center;color:var(--muted);font-size:12px;letter-spacing:.12em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <span class="dot"></span>
+      <h1 class="serif">麻将对对碰</h1>
+      <small>MAHJONG&nbsp;MATCH</small>
+    </div>
+    <div class="steps" id="steps"></div>
+  </header>
+  <main id="app"></main>
+  <footer class="foot">新手第一堂麻将课 · 识牌 · 组牌 · 听牌 · 算番</footer>
+</div>
+
+<script>
+/* ============================================================
+   麻将对对碰 —— 面向麻将新手的四章递进教学游戏
+   第一章 识牌 · 第二章 组牌 · 第三章 听牌 · 第四章 算番
+   ============================================================ */
+
+/* ---------- 基础数据 ---------- */
+const CN = ['','一','二','三','四','五','六','七','八','九'];
+const SUIT_CN = {w:'万',t:'条',d:'筒'};
+const WIND = {1:'东',2:'南',3:'西',4:'北'};
+const ARROW = {1:'中',2:'發',3:'白'};
+const ORDER = {w:0,t:1,d:2,f:3,j:4};           // 花色排序，用于递归拆解
+
+const t = (suit,num) => ({suit,num});
+const key = x => x.suit + x.num;
+const fromKey = k => ({suit:k[0], num:+k.slice(1)});
+
+function tileName(x){
+  if(x.suit==='w'||x.suit==='t'||x.suit==='d') return CN[x.num]+SUIT_CN[x.suit];
+  if(x.suit==='f') return WIND[x.num]+'风';
+  return {1:'红中',2:'发财',3:'白板'}[x.num];
+}
+function tileCat(x){
+  return {w:'万子（数字牌）',t:'条子（又称索子）',d:'筒子（又称饼子）',f:'风牌（字牌）',j:'箭牌（字牌）'}[x.suit];
+}
+
+/* ---------- 牌面渲染 ---------- */
+function colsFor(n){ return n<=3?1 : n<=6?2 : 3; }
+
+function tileFaceHTML(x){
+  const cls = x.suit;
+  if(x.suit==='w'){
+    return `<span class="glyph-num g-w">${CN[x.num]}</span><span class="glyph-suit g-ws">萬</span>`;
+  }
+  if(x.suit==='t'){
+    let bars='';
+    for(let i=0;i<x.num;i++){
+      // 一条(幺鸡)用红色点缀，贴近真牌
+      const red = (x.num===1) ? ' red' : '';
+      bars += `<i class="bamboo${red}"></i>`;
+    }
+    return `<span class="pips" style="--cols:${colsFor(x.num)}">${bars}</span>`;
+  }
+  if(x.suit==='d'){
+    let dots='';
+    for(let i=0;i<x.num;i++){
+      const red = (x.num===5 && i===4) ? ' red' : '';
+      dots += `<i class="dot${red}"></i>`;
+    }
+    return `<span class="pips" style="--cols:${colsFor(x.num)}">${dots}</span>`;
+  }
+  if(x.suit==='f') return `<span class="g-big f">${WIND[x.num]}</span>`;
+  // 箭牌
+  if(x.num===3) return `<span class="g-white"></span>`;
+  return `<span class="g-big ${x.num===1?'red':'green'}">${ARROW[x.num]}</span>`;
+}
+
+function tileEl(x,{small=false,delay=0}={}){
+  const b=document.createElement('button');
+  b.className='tile'+(small?' sm':'');
+  b.type='button';
+  b.dataset.key=key(x);
+  b.innerHTML=`<span class="face" style="animation-delay:${delay}ms">${tileFaceHTML(x)}</span>`;
+  return b;
+}
+
+/* ---------- 胡牌判定（4 副面子 + 1 对将） ---------- */
+function counts(tiles){
+  const m=new Map();
+  tiles.forEach(x=>m.set(key(x),(m.get(key(x))||0)+1));
+  return m;
+}
+function cmpKey(a,b){
+  if(ORDER[a[0]]!==ORDER[b[0]]) return ORDER[a[0]]-ORDER[b[0]];
+  return (+a.slice(1))-(+b.slice(1));
+}
+// 递归拆解：能否全部组成面子（顺子/刻子）
+function decompose(m){
+  const ks=[...m.keys()].filter(k=>m.get(k)>0).sort(cmpKey);
+  if(!ks.length) return true;
+  const first=ks[0], suit=first[0], num=+first.slice(1);
+  if(m.get(first)>=3){
+    m.set(first,m.get(first)-3);
+    if(decompose(m)){ m.set(first,m.get(first)+3); return true; }
+    m.set(first,m.get(first)+3);
+  }
+  if(ORDER[suit]<=2){
+    const k2=suit+(num+1), k3=suit+(num+2);
+    if((m.get(k2)||0)>0 && (m.get(k3)||0)>0){
+      m.set(first,m.get(first)-1); m.set(k2,m.get(k2)-1); m.set(k3,m.get(k3)-1);
+      if(decompose(m)){ m.set(first,m.get(first)+1); m.set(k2,m.get(k2)+1); m.set(k3,m.get(k3)+1); return true; }
+      m.set(first,m.get(first)+1); m.set(k2,m.get(k2)+1); m.set(k3,m.get(k3)+1);
+    }
+  }
+  return false;
+}
+// 找出一种拆解方案，用于讲解展示
+function solveShow(m){
+  const ks=[...m.keys()].filter(k=>m.get(k)>0).sort(cmpKey);
+  if(!ks.length) return [];
+  const first=ks[0], suit=first[0], num=+first.slice(1);
+  if(m.get(first)>=3){
+    m.set(first,m.get(first)-3);
+    const r=solveShow(m); m.set(first,m.get(first)+3);
+    if(r) return [['刻子',[first,first,first]], ...r];
+  }
+  if(ORDER[suit]<=2){
+    const k2=suit+(num+1), k3=suit+(num+2);
+    if((m.get(k2)||0)>0 && (m.get(k3)||0)>0){
+      m.set(first,m.get(first)-1); m.set(k2,m.get(k2)-1); m.set(k3,m.get(k3)-1);
+      const r=solveShow(m);
+      m.set(first,m.get(first)+1); m.set(k2,m.get(k2)+1); m.set(k3,m.get(k3)+1);
+      if(r) return [['顺子',[first,k2,k3]], ...r];
+    }
+  }
+  return null;
+}
+function solveWin(tiles){
+  if(tiles.length!==14) return null;
+  const m=counts(tiles);
+  for(const [k,v] of [...m]){
+    if(v>=2){
+      const m2=new Map(m); m2.set(k,v-2);
+      const rest=solveShow(m2);
+      if(rest) return {pair:[k,k], groups:rest};
+    }
+  }
+  return null;
+}
+const canWin = tiles => !!solveWin(tiles);
+
+/* ---------- 组牌判定（三张是否构成面子） ---------- */
+function meldType(a,b,c){
+  if(!a||!b||!c) return null;
+  if(!(a.suit===b.suit && b.suit===c.suit)) return null;
+  const n=[a.num,b.num,c.num].sort((x,y)=>x-y);
+  if(n[0]===n[1] && n[1]===n[2]) return '刻子';
+  if(ORDER[a.suit]<=2 && n[1]===n[0]+1 && n[2]===n[1]+1) return '顺子';
+  return null;
+}
+
+/* ---------- 通用工具 ---------- */
+function shuffle(a){
+  const r=a.slice();
+  for(let i=r.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [r[i],r[j]]=[r[j],r[i]]; }
+  return r;
+}
+const gap=(ms)=>new Promise(r=>setTimeout(r,ms));
+function esc(s){ return String(s).replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m])); }
+function tilesRow(list,opts={}){
+  const wrap=document.createElement('div');
+  wrap.style.display='flex';wrap.style.gap='6px';wrap.style.flexWrap='wrap';
+  list.forEach((x,i)=>wrap.appendChild(tileEl(x,{small:true,delay:i*45})));
+  return wrap;
+}
+
+/* ---------- 全局状态 ---------- */
+const CHAPTERS=[
+  {no:'壹', title:'识牌', en:'KNOW THE TILES', desc:'把完全相同的两张牌"碰"到一起，在配对中记住万、条、筒与字牌。'},
+  {no:'贰', title:'组牌', en:'BUILD MELDS',   desc:'选出三张能组成「顺子」或「刻子」的牌，练习麻将最基本的搭子思维。'},
+  {no:'叁', title:'听牌', en:'FIND THE WIN',  desc:'面对一手只差一张就胡的牌，从牌墙里挑出唯一能让你胡牌的那张。'},
+  {no:'肆', title:'算番', en:'NAME THE HAND', desc:'把成型的牌型与它对应的番种名称配对，认识清一色、碰碰胡、七对子等。'}
+];
+const state={ unlocked:0, cleared:[false,false,false,false], facts:new Set(), mistakes:0 };
+const app=document.getElementById('app');
+const stepsEl=document.getElementById('steps');
+
+function renderSteps(){
+  stepsEl.innerHTML='';
+  CHAPTERS.forEach((c,i)=>{
+    const d=document.createElement('span');
+    d.className='s'+(i===state.unlocked&&!state.cleared[i]?' on':(state.cleared[i]?' done':''));
+    stepsEl.appendChild(d);
+  });
+}
+function unlock(i){ if(i>state.unlocked) state.unlocked=i; renderSteps(); }
+function learn(fact){ state.facts.add(fact); }
+
+/* ============================================================
+   首屏
+   ============================================================ */
+function screenHome(){
+  renderSteps();
+  app.innerHTML='';
+  const hero=document.createElement('section');
+  hero.className='hero';
+  hero.innerHTML=`
+    <div class="kicker reveal">新 手 第 一 堂 麻 将 课</div>
+    <h2 class="big serif reveal" style="animation-delay:60ms">看牌、搭牌、<em>碰出好牌</em></h2>
+    <p class="lead reveal" style="animation-delay:120ms">
+      不用背规则、不用记番数。从"找两张一样的牌"开始，四章由浅入深，
+      在你亲手配对的过程里，把麻将最核心的四件事练成肌肉记忆。
+    </p>
+    <div class="cta reveal" style="animation-delay:180ms">
+      <button class="btn primary" id="startBtn">从第一章开始</button>
+      <span class="hintline">预计 10 分钟 · 无需麻将基础</span>
+    </div>`;
+  app.appendChild(hero);
+
+  const list=document.createElement('section');
+  list.className='chapters reveal';
+  list.style.animationDelay='240ms';
+  CHAPTERS.forEach((c,i)=>{
+    const locked=i>state.unlocked;
+    const row=document.createElement('div');
+    row.className='row'+(locked?' locked':'');row.dataset.i=i;
+    row.innerHTML=`
+      <div class="no serif">${c.no}</div>
+      <div><div class="t serif">${c.title} · ${c.en}</div><div class="d">${c.desc}</div></div>
+      <div class="go">${locked?'未解锁':'进入 →'}</div>`;
+    if(!locked) row.onclick=()=>startChapter(i);
+    list.appendChild(row);
+  });
+  app.appendChild(list);
+
+  document.getElementById('startBtn').onclick=()=>startChapter(state.unlocked);
+}
+
+/* ============================================================
+   关卡容器
+   ============================================================ */
+function stageShell(chapterIdx){
+  const c=CHAPTERS[chapterIdx];
+  renderSteps();
+  app.innerHTML='';
+  const head=document.createElement('div');
+  head.className='stage-head reveal';
+  head.innerHTML=`
+    <div>
+      <div class="t1">第 ${c.no} 章 · ${c.en}</div>
+      <h3 class="serif">${c.title}</h3>
+      <div class="goal" id="goalText">${c.desc}</div>
+    </div>
+    <div class="tools">
+      <button class="btn ghost" id="homeBtn">目录</button>
+    </div>`;
+  app.appendChild(head);
+  document.getElementById('homeBtn').onclick=screenHome;
+  const table=document.createElement('div');
+  table.className='table reveal';
+  table.style.animationDelay='80ms';
+  app.appendChild(table);
+  return table;
+}
+function setGoal(html){ document.getElementById('goalText').innerHTML=html; }
+
+function feedbackEl(host){
+  const f=document.createElement('div');
+  f.className='feedback';
+  f.innerHTML='<span class="tag">提示</span><span class="msg">点两张相同的牌，把它们碰掉。</span>';
+  host.appendChild(f);
+  return {
+    el:f,
+    set(kind,msg){
+      f.className='feedback'+(kind?' '+kind:'');
+      const tag=kind==='ok'?'正确':(kind==='no'?'再想想':'提示');
+      f.querySelector('.tag').textContent=tag;
+      f.querySelector('.msg').innerHTML=msg;
+    }
+  };
+}
+
+function finishChapter(i,{facts=[],title,mark='胡了'}={}){
+  facts.forEach(learn);
+  const cleared=state.cleared.slice(); cleared[i]=true; state.cleared=cleared;
+  unlock(Math.min(i+1,3)); renderSteps();
+  const ov=document.createElement('div');
+  ov.className='overlay';
+  const all=state.cleared.every(Boolean);
+  ov.innerHTML=`
+    <div class="sheet">
+      <div class="mark serif">${all?'🀄':mark}</div>
+      <h4 class="serif">${title}</h4>
+      <p>${all?'四章全部完成，你已经走完了麻将新手最该掌握的四步。':'这一章的知识点已经装进脑子了，继续下一章。'}</p>
+      <ul class="facts">${facts.map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
+      <div class="acts">
+        ${i<3?`<button class="btn primary" id="nextBtn">进入第 ${CHAPTERS[i+1].no} 章 · ${CHAPTERS[i+1].title}</button>`
+              :`<button class="btn primary" id="nextBtn">查看我的学习成果</button>`}
+        <button class="btn ghost" id="againBtn">再玩本章</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  document.getElementById('againBtn').onclick=()=>{ ov.remove(); startChapter(i); };
+  document.getElementById('nextBtn').onclick=()=>{ ov.remove(); i<3?startChapter(i+1):screenSummary(); };
+}
+
+/* ============================================================
+   第一章 · 识牌
+   ============================================================ */
+function startChapter(i){
+  unlock(i);
+  if(i===0) chapter1();
+  if(i===1) chapter2();
+  if(i===2) chapter3();
+  if(i===3) chapter4();
+}
+
+function chapter1(){
+  const table=stageShell(0);
+  setGoal('把 <b>两张完全相同的牌</b> 依次点中，就能把它们"碰"掉。看清花色和点数再动手。');
+
+  // 6 组共 12 张，覆盖筒 / 条 / 万 / 风 / 箭
+  const pairs=[
+    [t('d',1),t('d',1)], [t('d',9),t('d',9)],
+    [t('t',5),t('t',5)], [t('w',3),t('w',3)],
+    [t('f',1),t('f',1)], [t('j',1),t('j',1)]
+  ];
+  const deck=shuffle(pairs.flat());
+
+  const board=document.createElement('div');
+  board.className='board';
+  table.appendChild(board);
+  const fb=feedbackEl(table);
+
+  let sel=null, remaining=6;
+  deck.forEach((x,i)=>{
+    const el=tileEl(x,{delay:i*55});
+    el.onclick=()=>{
+      if(el.classList.contains('gone')||el===sel) return;
+      if(!sel){ sel=el; el.classList.add('sel'); return; }
+      const a=sel, b=el;
+      if(a.dataset.key===b.dataset.key){
+        const tx=fromKey(a.dataset.key);
+        a.classList.remove('sel');
+        a.classList.add('gone'); b.classList.add('gone');
+        fb.set('ok',`<b>${tileName(tx)}</b> 配对成功 —— 属于${tileCat(tx)}。${describeTile(tx)}`);
+        learn(`${tileName(tx)}：${tileCat(tx)}`);
+        sel=null; remaining--;
+        if(remaining===0){
+          setTimeout(()=>finishChapter(0,{
+            title:'第一章 · 识牌 完成',
+            mark:'碰',
+            facts:['相同花色、相同点数的两张牌，就是一张"对子"。','万子＝数字、条子＝竹节、筒子＝圆点，字牌只有东南西北与中发白。']
+          }),600);
+        }
+      }else{
+        state.mistakes++;
+        b.classList.add('sel');
+        a.classList.add('wrong'); b.classList.add('wrong');
+        fb.set('no',`这两张不一样：<b>${tileName(fromKey(a.dataset.key))}</b> 与 <b>${tileName(fromKey(b.dataset.key))}</b>，要花色和点数都相同才行。`);
+        setTimeout(()=>{
+          a.classList.remove('sel','wrong'); b.classList.remove('sel','wrong');
+        },520);
+        sel=null;
+      }
+    };
+    board.appendChild(el);
+  });
+  fb.set('', '点两张相同的牌，把它们碰掉。共 6 对。');
+}
+
+function describeTile(x){
+  if(x.suit==='f') return '风牌有东南西北四种，各四张。';
+  if(x.suit==='j') return '箭牌是红中、发财、白板，各四张。';
+  return `${x.num} 个${x.suit==='t'?'竹节':'圆点'}／数字 ${x.num}。`;
+}
+
+/* ============================================================
+   第二章 · 组牌
+   ============================================================ */
+function chapter2(){
+  const table=stageShell(1);
+  setGoal('依次点选 <b>三张</b> 牌：同花色且点数相连＝<b>顺子</b>，三张完全相同＝<b>刻子</b>。凑成一个面子就能消掉。');
+
+  const melds=[
+    ['顺子',[t('t',3),t('t',4),t('t',5)]],
+    ['顺子',[t('w',6),t('w',7),t('w',8)]],
+    ['刻子',[t('d',2),t('d',2),t('d',2)]],
+    ['刻子',[t('f',1),t('f',1),t('f',1)]]
+  ];
+  const deck=shuffle(melds.flatMap(m=>m[1]));
+
+  const board=document.createElement('div');
+  board.className='board';
+  table.appendChild(board);
+  const fb=feedbackEl(table);
+
+  let picked=[], left=4;
+  deck.forEach((x,i)=>{
+    const el=tileEl(x,{delay:i*50});
+    el.onclick=()=>{
+      if(el.classList.contains('gone')) return;
+      if(el.classList.contains('sel')){ el.classList.remove('sel'); picked=picked.filter(p=>p.el!==el); return; }
+      if(picked.length>=3) return;
+      el.classList.add('sel'); picked.push({el,x});
+      if(picked.length===3){
+        const [a,b,c]=picked;
+        const mt=meldType(a.x,b.x,c.x);
+        if(mt){
+          const names=picked.map(p=>tileName(p.x));
+          picked.forEach(p=>{ p.el.classList.remove('sel'); p.el.classList.add('gone'); });
+          const detail = mt==='顺子'
+            ? '同花色、点数依次相连的三张牌。'
+            : '三张花色点数完全相同的牌。';
+          fb.set('ok',`<b>${names.join(' + ')}</b> 组成一个 <b>${mt}</b>。${detail}`);
+          learn(`${names.join('、')} 可组成${mt}`);
+          picked=[]; left--;
+          if(left===0){
+            setTimeout(()=>finishChapter(1,{
+              title:'第二章 · 组牌 完成',
+              mark:'顺',
+              facts:['面子 = 顺子（三连）或刻子（三同），是胡牌的基本砖块。','顺子只存在于万、条、筒；字牌只能靠刻子。','一副胡牌牌型 = 4 个面子 + 1 对将。']
+            }),650);
+          }
+        }else{
+          state.mistakes++;
+          picked.forEach(p=>p.el.classList.add('wrong'));
+          fb.set('no',`还差一点：顺子要 <b>同花色点数相连</b>（如三四五条），刻子要 <b>三张一模一样</b>。再试一次。`);
+          setTimeout(()=>{
+            picked.forEach(p=>p.el.classList.remove('sel','wrong'));
+            picked=[];
+          },560);
+        }
+      }
+    };
+    board.appendChild(el);
+  });
+  fb.set('','凑出 4 个面子（2 顺子 + 2 刻子）即可过关。');
+}
+
+/* ============================================================
+   第三章 · 听牌
+   ============================================================ */
+function chapter3(){
+  const table=stageShell(2);
+  setGoal('这是一手 <b>13 张</b> 的手牌，只差最后一张就能胡。从下面牌墙中选出 <b>唯一能让你胡牌</b> 的那张。');
+
+  // 手牌：一二三万 / 四五六万 / 七八九筒 / 三条×2 / 东×2   → 听「三条」
+  const hand=[
+    t('w',1),t('w',2),t('w',3),
+    t('w',4),t('w',5),t('w',6),
+    t('d',7),t('d',8),t('d',9),
+    t('t',3),t('t',3),
+    t('f',1),t('f',1)
+  ];
+  const answer=t('t',3);
+  const wall=[t('t',3),t('t',2),t('t',4),t('w',9),t('d',1),t('f',3)];
+
+  const hlab=document.createElement('div');
+  hlab.style.cssText='color:rgba(255,255,255,.62);font-size:12px;letter-spacing:.22em;margin-bottom:12px';
+  hlab.textContent='你的手牌 · 13 张';
+  table.appendChild(hlab);
+  const handRow=document.createElement('div');
+  handRow.className='board';
+  handRow.style.setProperty('--tw','46px');
+  hand.sort((a,b)=>cmpKey(key(a),key(b)));
+  hand.forEach((x,i)=>handRow.appendChild(tileEl(x,{delay:i*35})));
+  table.appendChild(handRow);
+
+  const fb=feedbackEl(table);
+  fb.set('','提示：先把手牌里的顺子和对子找出来，看看缺的是哪一张。');
+
+  const wallWrap=document.createElement('div');
+  wallWrap.className='wall';
+  wallWrap.innerHTML=`<div class="lab">牌 墙 · 请 选 一 张</div>`;
+  const wallRow=document.createElement('div');
+  wallRow.className='board';
+  wallWrap.appendChild(wallRow);
+  table.appendChild(wallWrap);
+
+  let done=false;
+  shuffle(wall).forEach((x,i)=>{
+    const el=tileEl(x,{delay:i*55});
+    el.onclick=()=>{
+      if(done) return;
+      if(key(x)===key(answer)){
+        done=true;
+        const win=[...hand,x].sort((a,b)=>cmpKey(key(a),key(b)));
+        const sol=solveWin(win);
+        // 展示成型牌型
+        handRow.innerHTML=''; handRow.style.setProperty('--tw','44px');
+        win.forEach((y,k)=>handRow.appendChild(tileEl(y,{delay:k*35})));
+        hlab.textContent='胡牌！14 张 = 4 个面子 + 1 对将';
+        fb.set('ok',`<b>摸到 ${tileName(x)} 就胡了！</b> 这手牌由 3 个顺子 + 1 个刻子 + 1 对将组成。`);
+        learn('听牌：手牌只差一张就能胡的状态；胡牌牌型 = 4 面子 + 1 将。');
+        setTimeout(()=>finishChapter(2,{
+          title:'第三章 · 听牌 完成',
+          mark:'听',
+          facts:['听牌＝差一张就胡，差的这张叫"听牌张"。','胡牌结构固定：4 个面子 + 1 对将，共 14 张。','本例牌型：123万 / 456万 / 789筒 / 333条 / 东东。']
+        }),1200);
+      }else{
+        state.mistakes++;
+        el.classList.add('wrong');
+        const test=[...hand,x];
+        fb.set('no',`摸到 <b>${tileName(x)}</b> 还没成：别急着猜，先看手牌里已有的顺子和对子，缺的才是听牌张。`);
+        setTimeout(()=>el.classList.remove('wrong'),520);
+      }
+    };
+    wallRow.appendChild(el);
+  });
+}
+
+/* ============================================================
+   第四章 · 算番
+   ============================================================ */
+function chapter4(){
+  const table=stageShell(3);
+  setGoal('左边是一手已胡的牌，右边是番种名称。先点一手牌，再点它对应的番种，配对成功即得分。');
+
+  const hands=[
+    {name:'平和', en:'全部由顺子组成，加一对将', tiles:[t('w',1),t('w',2),t('w',3),t('w',4),t('w',5),t('w',6),t('d',7),t('d',8),t('d',9),t('t',2),t('t',3),t('t',4),t('f',1),t('f',1)]},
+    {name:'碰碰胡', en:'四个面子全是刻子', tiles:[t('w',3),t('w',3),t('w',3),t('t',5),t('t',5),t('t',5),t('d',7),t('d',7),t('d',7),t('f',1),t('f',1),t('f',1),t('j',1),t('j',1)]},
+    {name:'清一色', en:'整手牌只用同一种花色', tiles:[t('w',1),t('w',2),t('w',3),t('w',4),t('w',5),t('w',6),t('w',7),t('w',8),t('w',9),t('w',3),t('w',3),t('w',3),t('w',2),t('w',2)]},
+    {name:'混一色', en:'一种花色 + 字牌', tiles:[t('w',1),t('w',2),t('w',3),t('w',4),t('w',5),t('w',6),t('w',7),t('w',8),t('w',9),t('f',1),t('f',1),t('f',1),t('j',1),t('j',1)]},
+    {name:'七对子', en:'七组对子组成的特殊牌型', tiles:[t('w',1),t('w',1),t('w',3),t('w',3),t('t',5),t('t',5),t('t',7),t('t',7),t('d',9),t('d',9),t('f',1),t('f',1),t('j',1),t('j',1)]}
+  ];
+
+  const wrap=document.createElement('div');
+  wrap.className='matchwrap';
+  table.appendChild(wrap);
+
+  const left=document.createElement('div'); left.className='mhands';
+  const right=document.createElement('div'); right.className='mnames';
+  wrap.appendChild(left); wrap.appendChild(right);
+
+  const fb=feedbackEl(table);
+  fb.set('','');
+
+  let selHand=null, selName=null, matched=0;
+
+  hands.forEach((h,i)=>{
+    const card=document.createElement('div');
+    card.className='mhand'; card.dataset.name=h.name;
+    card.innerHTML=`<div class="lbl">牌型 ${i+1}</div>`;
+    card.appendChild(tilesRow(h.tiles));
+    card.onclick=()=>{
+      if(card.classList.contains('matched')) return;
+      [...left.children].forEach(c=>c.classList.remove('sel'));
+      card.classList.add('sel'); selHand=card; tryMatch();
+    };
+    left.appendChild(card);
+  });
+
+  shuffle(hands).forEach(h=>{
+    const b=document.createElement('button');
+    b.className='mname'; b.type='button'; b.dataset.name=h.name;
+    b.innerHTML=`<div class="n serif">${h.name}</div><div class="e">${h.en}</div>`;
+    b.onclick=()=>{
+      if(b.classList.contains('matched')) return;
+      [...right.children].forEach(c=>c.classList.remove('sel'));
+      b.classList.add('sel'); selName=b; tryMatch();
+    };
+    right.appendChild(b);
+  });
+
+  function tryMatch(){
+    if(!selHand||!selName) return;
+    if(selHand.dataset.name===selName.dataset.name){
+      matched++;
+      const nm=selHand.dataset.name;
+      selHand.classList.add('matched'); selHand.classList.remove('sel');
+      selName.classList.add('matched'); selName.classList.remove('sel');
+      const en=hands.find(h=>h.name===nm).en;
+      fb.set('ok',`<b>${nm}</b> 配对正确 —— ${en}。`);
+      learn(`${nm}：${en}`);
+      selHand=selName=null;
+      if(matched===hands.length){
+        setTimeout(()=>finishChapter(3,{
+          title:'第四章 · 算番 完成',
+          mark:'番',
+          facts:['平和＝全是顺子；碰碰胡＝全是刻子。','清一色＝单一花色；混一色＝一种花色配字牌。','七对子＝七组对子，是特殊牌型。']
+        }),700);
+      }
+    }else{
+      state.mistakes++;
+      const a=selHand, b=selName;
+      a.classList.add('wrong'); b.classList.add('wrong');
+      fb.set('no',`这两个不匹配。看看牌面：是清一色、碰碰胡，还是靠对子？`);
+      setTimeout(()=>{
+        a.classList.remove('sel','wrong'); b.classList.remove('sel','wrong');
+        selHand=selName=null;
+      },560);
+    }
+  }
+}
+
+/* ============================================================
+   学习成果
+   ============================================================ */
+function screenSummary(){
+  renderSteps();
+  app.innerHTML='';
+  const c=document.createElement('div');
+  c.className='reveal';
+  c.innerHTML=`
+    <div class="stage-head">
+      <div>
+        <div class="t1">学 习 成 果</div>
+        <h3 class="serif">你已经会看牌了</h3>
+        <div class="goal">这是你在这堂课上真正记住的麻将知识，一共 ${state.facts.size} 条。</div>
+      </div>
+      <div class="tools"><button class="btn ghost" id="homeBtn">回到目录</button></div>
+    </div>`;
+  app.appendChild(c);
+  document.getElementById('homeBtn').onclick=screenHome;
+
+  const box=document.createElement('div');
+  box.className='sheet';
+  box.style.margin='0 auto';box.style.maxWidth='640px';
+  box.innerHTML=`
+    <div class="mark serif">🀄</div>
+    <h4 class="serif">识牌 · 组牌 · 听牌 · 算番</h4>
+    <p>四步已全部走完，配对失误 ${state.mistakes} 次。下面是你掌握的知识点：</p>
+    <ul class="facts">${[...state.facts].map(f=>`<li>${esc(f)}</li>`).join('')}</ul>
+    <div class="acts">
+      <button class="btn primary" id="againAll">从头再玩一次</button>
+    </div>`;
+  app.appendChild(box);
+  box.style.animation='pop .5s cubic-bezier(.2,1.2,.4,1)';
+
+  document.getElementById('againAll').onclick=()=>{
+    state.cleared=[false,false,false,false];state.unlocked=0;state.facts=new Set();state.mistakes=0;
+    screenHome();
+  };
+}
+
+/* ---------- 启动 ---------- */
+screenHome();
+</script>
+</body>
+</html>
